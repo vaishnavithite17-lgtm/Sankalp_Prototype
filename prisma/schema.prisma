@@ -1,0 +1,110 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  CITIZEN
+  AUTHORITY
+}
+
+enum Status {
+  REPORTED
+  AI_ANALYSED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CITIZEN_VERIFIED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model User {
+  id          String         @id @default(uuid())
+  name        String
+  email       String         @unique
+  password    String
+  role        Role           @default(CITIZEN)
+  department  String?
+  createdAt   DateTime       @default(now())
+  issues      Issue[]        @relation("ReportedBy")
+  supports    IssueSupport[]
+  updates     IssueUpdate[]
+}
+
+model Cluster {
+  id             String    @id @default(uuid())
+  title          String
+  category       String
+  latitude       Float
+  longitude      Float
+  status         Status    @default(REPORTED)
+  department     String
+  reportCount    Int       @default(1)
+  supporterCount Int       @default(0)
+  priority       Priority  @default(MEDIUM)
+  impactScore    Float     @default(50.0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  issues         Issue[]
+}
+
+model Issue {
+  id                  String         @id @default(uuid())
+  title               String
+  description         String
+  category            String
+  latitude            Float
+  longitude           Float
+  imageUrl            String?
+  status              Status         @default(REPORTED)
+  department          String
+  severity            Int            @default(3) // 1-5 scale
+  environmentalImpact Int            @default(3) // 1-5 scale
+  peopleAffected      Int            @default(3) // 1-5 scale
+  urgency             Int            @default(3) // 1-5 scale
+  communitySupport    Int            @default(1)
+  impactScore         Float          @default(50.0) // 0-100 scale
+  priority            Priority       @default(MEDIUM)
+  aiExplanation       String
+  clusterId           String?
+  cluster             Cluster?       @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+  createdById         String
+  createdBy           User           @relation("ReportedBy", fields: [createdById], references: [id])
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  supports            IssueSupport[]
+  updates             IssueUpdate[]
+}
+
+model IssueSupport {
+  id        String   @id @default(uuid())
+  issueId   String
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([issueId, userId])
+}
+
+model IssueUpdate {
+  id            String   @id @default(uuid())
+  issueId       String
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  status        Status
+  comment       String
+  proofImageUrl String?
+  updatedById   String
+  updatedBy     User     @relation(fields: [updatedById], references: [id])
+  createdAt     DateTime @default(now())
+}
