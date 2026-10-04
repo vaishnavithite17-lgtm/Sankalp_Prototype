@@ -7,33 +7,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
-enum Role {
-  CITIZEN
-  AUTHORITY
-}
-
-enum Status {
-  REPORTED
-  AI_ANALYSED
-  ASSIGNED
-  IN_PROGRESS
-  RESOLVED
-  CITIZEN_VERIFIED
-}
-
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
 model User {
   id          String         @id @default(uuid())
   name        String
   email       String         @unique
   password    String
-  role        Role           @default(CITIZEN)
+  role        String         @default("CITIZEN") // CITIZEN / AUTHORITY
   department  String?
   createdAt   DateTime       @default(now())
   issues      Issue[]        @relation("ReportedBy")
@@ -47,11 +26,11 @@ model Cluster {
   category       String
   latitude       Float
   longitude      Float
-  status         Status    @default(REPORTED)
+  status         String    @default("REPORTED") // REPORTED, AI_ANALYSED, ASSIGNED, IN_PROGRESS, RESOLVED
   department     String
   reportCount    Int       @default(1)
   supporterCount Int       @default(0)
-  priority       Priority  @default(MEDIUM)
+  priority       String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
   impactScore    Float     @default(50.0)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -66,7 +45,7 @@ model Issue {
   latitude            Float
   longitude           Float
   imageUrl            String?
-  status              Status         @default(REPORTED)
+  status              String         @default("REPORTED")
   department          String
   severity            Int            @default(3) // 1-5 scale
   environmentalImpact Int            @default(3) // 1-5 scale
@@ -74,7 +53,7 @@ model Issue {
   urgency             Int            @default(3) // 1-5 scale
   communitySupport    Int            @default(1)
   impactScore         Float          @default(50.0) // 0-100 scale
-  priority            Priority       @default(MEDIUM)
+  priority            String         @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
   aiExplanation       String
   clusterId           String?
   cluster             Cluster?       @relation(fields: [clusterId], references: [id], onDelete: SetNull)
@@ -100,8 +79,8 @@ model IssueSupport {
 model IssueUpdate {
   id            String   @id @default(uuid())
   issueId       String
-  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  status        Status
+  issue         Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  status        String
   comment       String
   proofImageUrl String?
   updatedById   String
